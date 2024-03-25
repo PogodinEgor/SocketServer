@@ -64,9 +64,18 @@ public class MultiThreadServer {
             while (true) {
                 sendInitialResponse(writer);
                 ClientRequestDTO requestDTO = readClientRequest(reader);
+
+
                 if (requestDTO == null) break;
 
+                    if(requestDTO.getMessage().equals("Последний объект")){
+                      writer.write(objectMapper.writeValueAsString(clientRequestService.getLastMessage()));
+                    } else {
+                        writer.write("Неверные данные в сообщении");
+                    }
+
                 processClientRequest(requestDTO, writer);
+
             }
         } catch (SocketTimeoutException e) {
             System.out.println("Соединение закрыто из-за таймаута");
@@ -108,6 +117,7 @@ public class MultiThreadServer {
         clientRequest.setCreatedAt(new Date());
         return clientRequest;
     }
+
 
 }
 

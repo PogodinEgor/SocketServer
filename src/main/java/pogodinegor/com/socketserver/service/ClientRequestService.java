@@ -6,9 +6,7 @@ import org.springframework.stereotype.Service;
 import pogodinegor.com.socketserver.model.ClientRequest;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -24,12 +22,17 @@ public class ClientRequestService {
 
 
     public ScheduledFuture<?> saveClientRequestWithDelay(ClientRequest clientRequest) {
+        if (clientRequest.getWaitingTime() < 1){
+            throw new RuntimeException("Время задания не должно быть меньше 1 секунды.");
+        }
         long delay = clientRequest.getWaitingTime() * 1000L;
         System.out.println("Планирование сохранения с задержкой: " + delay + "ms");
 
        return scheduledThreadPool.schedule(() -> {
             System.out.println("Начало выполнения задачи с задержкой");
             saveClientRequest(clientRequest);
+
+
         },clientRequest.getWaitingTime(), TimeUnit.SECONDS);
     }
 
@@ -46,6 +49,27 @@ public class ClientRequestService {
             pstmt.executeUpdate();
         } catch (Exception e) {
             log.error(e.getMessage());
+        }
+    }
+
+    public ClientRequest getLastMessage(){
+        String sql = "SELECT * FROM servers ORDER BY id DESC LIMIT 1";
+        try(Connection connection = dataSource.getConnection();
+            PreparedStatement pstmt = connection.prepareStatement(sql))
+
+        {
+            ResultSet resultSet = pstmt.executeQuery();
+            ClientRequest clientRequest = null;
+            if(resultSet.next()){
+                clientRequest = new ClientRequest();
+                clientRequest.setId(resultSet.getInt("id"));
+                clientRequest.setWaitingTime(resultSet.getInt("waiting_time"));
+                clientRequest.setMessage(resultSet.getString("message"));
+                clientRequest.setCreatedAt(resultSet.getTimestamp("created_at"));
+            }
+            return clientRequest;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 }

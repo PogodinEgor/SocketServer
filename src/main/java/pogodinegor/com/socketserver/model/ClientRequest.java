@@ -18,7 +18,7 @@ public class ClientRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Long id;
+    private int id;
 
     @Column(name = "waiting_time")
     private int waitingTime;
